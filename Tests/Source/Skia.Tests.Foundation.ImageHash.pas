@@ -144,8 +144,8 @@ type
         Saturation: Double;
         Lightness: Double;
       end;
-    class function CompareColorHSL(const AColor: TAlphaColor; const AAvarage: THSL): TValueRelationship; static;
-    class procedure ComputeHSLAvarage(const AColor: TAlphaColor; var AAvarage: THSL); static;
+    class function CompareColorHSL(const AColor: TAlphaColor; const AAverage: THSL): TValueRelationship; static;
+    class procedure ComputeHSLAverage(const AColor: TAlphaColor; var AAverage: THSL); static;
   public
     class function BackgroundColor: TAlphaColor; override;
     class function GetDownscaleSize: TSize; override;
@@ -398,31 +398,31 @@ begin
 end;
 
 class function THSLHash.CompareColorHSL(const AColor: TAlphaColor;
-  const AAvarage: THSL): TValueRelationship;
+  const AAverage: THSL): TValueRelationship;
 const
   HueWeight = 0.4125;
   SaturationWeight = 0.3375;
   LightnessWeight = 0.25;
 var
   H, S, L: Single;
-  LAvarageValue: Double;
+  LAverageValue: Double;
   LColorValue: Double;
 begin
-  LAvarageValue := AAvarage.Hue * HueWeight + AAvarage.Saturation * SaturationWeight + AAvarage.Lightness * LightnessWeight;
+  LAverageValue := AAverage.Hue * HueWeight + AAverage.Saturation * SaturationWeight + AAverage.Lightness * LightnessWeight;
   RGBToHSL(AColor, H, S, L);
   LColorValue := H * HueWeight + S * SaturationWeight + L * LightnessWeight;
-  Result := CompareValue(LColorValue, LAvarageValue, TEpsilon.Vector);
+  Result := CompareValue(LColorValue, LAverageValue, TEpsilon.Vector);
 end;
 
-class procedure THSLHash.ComputeHSLAvarage(const AColor: TAlphaColor;
-  var AAvarage: THSL);
+class procedure THSLHash.ComputeHSLAverage(const AColor: TAlphaColor;
+  var AAverage: THSL);
 var
   H, S, L: Single;
 begin
   RGBToHSL(AColor, H, S, L);
-  AAvarage.Hue := AAvarage.Hue + H / (DownscaleWidth * DownscaleHeight);
-  AAvarage.Saturation := AAvarage.Saturation + S / (DownscaleWidth * DownscaleHeight);
-  AAvarage.Lightness := AAvarage.Lightness + L / (DownscaleWidth * DownscaleHeight);
+  AAverage.Hue := AAverage.Hue + H / (DownscaleWidth * DownscaleHeight);
+  AAverage.Saturation := AAverage.Saturation + S / (DownscaleWidth * DownscaleHeight);
+  AAverage.Lightness := AAverage.Lightness + L / (DownscaleWidth * DownscaleHeight);
 end;
 
 class function THSLHash.GetDownscaleSize: TSize;
@@ -436,23 +436,23 @@ var
   Y: Integer;
   LByteIndex: Integer;
   LBitIndexInByte: ShortInt;
-  LAvarage: THSL;
+  LAverage: THSL;
 begin
   Assert(AImagePixels <> nil);
   Assert(AImagePixels.Width = DownscaleWidth);
   Assert(AImagePixels.Height = DownscaleHeight);
 
   SetLength(Result, HashBytes);
-  FillChar(LAvarage, SizeOf(LAvarage), #0);
+  FillChar(LAverage, SizeOf(LAverage), #0);
   for Y := 0 to DownscaleHeight - 1 do
     for X := 0 to DownscaleWidth - 1 do
-      ComputeHSLAvarage(AImagePixels.Colors[X, Y], LAvarage);
+      ComputeHSLAverage(AImagePixels.Colors[X, Y], LAverage);
 
   for Y := 0 to DownscaleHeight - 1 do
   begin
     for X := 0 to DownscaleWidth - 1 do
     begin
-      if CompareColorHSL(AImagePixels.Colors[X, Y], LAvarage) = GreaterThanValue then
+      if CompareColorHSL(AImagePixels.Colors[X, Y], LAverage) = GreaterThanValue then
       begin
         LByteIndex := (Y * DownscaleWidth + X) div BitsPerByte;
         Assert((LByteIndex >= 0) and (LByteIndex < HashBytes));
